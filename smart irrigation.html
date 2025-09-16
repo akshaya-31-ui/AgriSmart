@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Irrigation System</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #83a4d4, #b6fbff);
+    }
+    .container, .output-container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease;
+    }
+    .show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background: linear-gradient(45deg, #6a11cb, #2575fc);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #2575fc, #6a11cb);
+      transform: scale(1.03);
+    }
+    /* Output Page */
+    .output-container {
+      max-width: 800px;
+      padding: 30px;
+      border-radius: 15px;
+    }
+    .frame {
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #f9f9f9;
+      border-left: 6px solid #2575fc;
+      animation: fadeIn 0.8s ease;
+    }
+    .frame h3 {
+      margin: 0 0 10px;
+      color: #34495e;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 12px 20px;
+      background: #ff5f6d;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: transform 0.2s ease;
+    }
+    .back-btn:hover {
+      background: #ff2e42;
+      transform: scale(1.05);
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(15px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Input Page -->
+  <div class="container show" id="inputPage">
+    <h1>🌱 Smart Irrigation System</h1>
+    <form id="irrigationForm">
+      <label for="crop">Crop Growing in the Field:</label>
+      <input type="text" id="crop" required>
+
+      <label for="moisture">Soil Moisture Content:</label>
+      <select id="moisture" required>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+        <option value="dry">Dry</option>
+      </select>
+
+      <label for="soil">Soil Type:</label>
+      <select id="soil" required>
+        <option value="sandy">Sandy</option>
+        <option value="loamy">Loamy</option>
+        <option value="clay">Clay</option>
+        <option value="Alluvial">Alluvial</option>
+        <option value="Black">Black</option>
+        <option value="Red">Red</option>
+      </select>
+
+      <label for="size">Field Size (in acres):</label>
+      <input type="number" id="size" required>
+
+      <label for="stage">Crop Stage:</label>
+      <select id="stage" required>
+        <option value="seeding">Seeding</option>
+        <option value="vegetative">Vegetative</option>
+        <option value="flowering">Flowering</option>
+        <option value="harvesting">Harvesting</option>
+      </select>
+
+      <label for="weather">Weather Type:</label>
+      <select id="weather" required>
+        <option value="hot">Hot</option>
+        <option value="dry">Dry</option>
+        <option value="rainy">Rainy</option>
+        <option value="normal">Normal</option>
+      </select>
+
+      <button type="submit">Get Recommendations</button>
+    </form>
+  </div>
+
+  <!-- Output Page -->
+  <div class="output-container" id="outputPage" style="display:none;">
+    <h1>🌾 Smart Irrigation Recommendations</h1>
+    <div class="frame" id="waterFrame"></div>
+    <div class="frame" id="timingFrame"></div>
+    <div class="frame" id="methodFrame"></div>
+    <div class="frame" id="fertFrame"></div>
+    <a href="#" class="back-btn" onclick="goBack()">⬅ Back</a>
+  </div>
+
+  <script>
+    document.getElementById("irrigationForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const crop = document.getElementById("crop").value;
+      const moisture = document.getElementById("moisture").value;
+      const soil = document.getElementById("soil").value;
+      const size = document.getElementById("size").value;
+      const stage = document.getElementById("stage").value;
+      const weather = document.getElementById("weather").value;
+
+      let water = "", timing = "", method = "";
+      let fertilizer = "", fertQuantity = "", fertTiming = "";
+
+      // Soil moisture effect
+      if (moisture === "low") {
+        water = "Provide 70 liters per acre.";
+        timing = "Water daily in the early morning.";
+        method = "Use drip irrigation to save water.";
+      } else if (moisture === "medium") {
+        water = "Provide 45-55 liters per acre.";
+        timing = "Water once every 2 days.";
+        method = "Sprinkler irrigation recommended.";
+      } else if (moisture === "dry") {
+        water = "Provide 90 liters per acre.";
+        timing = "Water once every single day.";
+        method = "Water is supplied below the soil surface using pipes or tubes.";
+      } else if (moisture === "high") {
+        water = "Provide 55 liters per acre.";
+        timing = "Water once a week.";
+        method = "Water should be supplied in furrows (small channels) between crop rows.";
+      } else {
+        water = "Minimal irrigation required.";
+        timing = "Once every 4-5 days.";
+        method = "Natural rainfall support is enough.";
+      }
+
+      if (soil === "sandy") {
+  water += " Sandy soil has low water holding capacity, so irrigate frequently with small amounts.";
+  method += " Drip irrigation is best to avoid water loss.";
+} else if (soil === "loamy") {
+  water += " Loamy soil retains water well, moderate irrigation is sufficient.";
+  method += " Sprinkler irrigation works effectively here.";
+} else if (soil === "clay") {
+  water += " Clay soil holds water for a long time, so reduce irrigation frequency.";
+  method += " Furrow irrigation is most suitable.";
+} else if (soil === "Alluvial") {
+  water += " Alluvial soil is very fertile, requires balanced irrigation based on crop stage.";
+  method += " Both drip and sprinkler methods are effective.";
+} else if (soil === "Black") {
+  water += " Black soil retains moisture for long periods, so irrigate less frequently but with more water each time.";
+  method += " Sub-surface irrigation is recommended.";
+} else if (soil === "Red") {
+  water += " Red soil has poor water retention, so frequent light irrigation is needed.";
+  method += " Drip irrigation with mulching is recommended.";
+}
+
+      // Crop stage fertilizers
+      if (stage === "seeding") {
+        fertilizer = "Nitrogen-based starter fertilizer.";
+        fertQuantity = "20 kg per acre.";
+        fertTiming = "At the time of sowing.";
+      } else if (stage === "vegetative") {
+        fertilizer = "Balanced NPK fertilizer.";
+        fertQuantity = "30 kg per acre.";
+        fertTiming = "Apply once a week.";
+      } else if (stage === "flowering") {
+        fertilizer = "Phosphorus and Potassium-rich fertilizer.";
+        fertQuantity = "25 kg per acre.";
+        fertTiming = "During flowering stage, twice a week.";
+      } else {
+        fertilizer = "Organic compost or light fertilizer.";
+        fertQuantity = "15 kg per acre.";
+        fertTiming = "Before harvest.";
+      }
+
+      // Weather conditions
+      if (weather === "hot") {
+        water += " Increase by 10 liters per acre due to high evaporation.";
+      } else if (weather === "dry") {
+        water += " Ensure mulching to reduce evaporation losses.";
+      } else if (weather === "rainy") {
+        water = "Reduce irrigation, rely on rainwater harvesting.";
+        method = "Drain excess water to prevent root damage.";
+      }
+
+      // Show output
+      document.getElementById("inputPage").classList.remove("show");
+      setTimeout(() => {
+        document.getElementById("inputPage").style.display = "none";
+        document.getElementById("outputPage").style.display = "block";
+        setTimeout(() => document.getElementById("outputPage").classList.add("show"), 50);
+      }, 400);
+
+      document.getElementById("waterFrame").innerHTML = `<h3>💧 Water Recommendation</h3><p>${water}</p>`;
+      document.getElementById("timingFrame").innerHTML = `<h3>⏰ Watering Timings</h3><p>${timing}</p>`;
+      document.getElementById("methodFrame").innerHTML = `<h3>🚜 Watering Method</h3><p>${method}</p>`;
+      document.getElementById("fertFrame").innerHTML = `<h3>🌿 Fertilizer Recommendation</h3><p>${fertilizer}<br>Quantity: ${fertQuantity}<br>Timing: ${fertTiming}</p>`;
+    });
+
+    function goBack() {
+      document.getElementById("outputPage").classList.remove("show");
+      setTimeout(() => {
+        document.getElementById("outputPage").style.display = "none";
+        document.getElementById("inputPage").style.display = "block";
+        setTimeout(() => document.getElementById("inputPage").classList.add("show"), 50);
+      }, 400);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriSmart - Smart Farming Assistant</title>
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(to right, #f0fdf4, #fefce8);
+      color: #333;
+    }
+                      
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 40px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      background: #16a34a;
+      color: #fff;
+      font-size: 20px;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .logo h1 {
+      font-size: 18px;
+      font-weight: bold;
+      color: #111;
+    }
+
+    .logo p {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .menu {
+      display: flex;
+      gap: 25px;
+    }
+
+    .menu a {
+      text-decoration: none;
+      color: #555;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+
+    .menu a:hover {
+      color: #16a34a;
+    }
+
+    .menu .active {
+      background: #dcfce7;
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: #166534;
+      font-weight: bold;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .hero-icon {
+      background: #22c55e;
+      color: white;
+      font-size: 28px;
+      width: 70px;
+      height: 70px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 15px;
+      margin: 0 auto 20px;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 800;
+      color: #111;
+    }
+
+    .hero h1 span {
+      color: #16a34a;
+    }
+
+    .hero p {
+      margin-top: 15px;
+      font-size: 18px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    /* Features */
+    .features {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 10px 18px;
+      border-radius: 25px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .tag:hover {
+      transform: scale(1.05);
+    }
+
+    .green {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .blue {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .yellow {
+      background: #fef9c3;
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-icon">🌿</div>
+      <div>
+        <h1>AgriSmart</h1>
+        <p>Smart Farming Assistant</p>
+      </div>
+    </div>
+    <div class="menu">
+      <a href="">🏠 Dashboard</a>
+      <a href="Crop Selection.html">🌱 Crop Selection</a>
+      <a href="disease detection.html">🩺 Disease Detection</a>
+      <a href="smart irrigation.html">💧 Smart Irrigation</a>
+      <a href="#" class="active">📊 Farm Analytics</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-icon">🍃</div>
+    <h1>Smart Farming <span>Made Simple</span></h1>
+    <p>
+      Harness the power of AI to make informed decisions about your crops, 
+      detect diseases early, and optimize irrigation for maximum yield and sustainability.
+    </p>
+    <div class="features">
+      <div class="tag green">🛡 Crop Protection</div>
+      <div class="tag blue">⚡ AI-Powered</div>
+      <div class="tag yellow">💧 Water Smart</div>
+    </div>
+  </section>
+
+  <script>
+    // Add interactivity
+    document.querySelectorAll(".tag").forEach(tag => {
+      tag.addEventListener("click", () => {
+        alert(You clicked on: ${tag.textContent});
+      });
+    });
+  </script>
+</body>
+</html>

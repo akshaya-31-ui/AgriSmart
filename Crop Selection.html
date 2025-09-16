@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Crop Recommendation — Clean Output</title>
+  <style>
+    :root{
+      --green:#2e7d32;
+      --muted:#666;
+      --bg:#f7faf6;
+      --accent:#15803d;
+    }
+    /* page */
+    html,body{height:100%; margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#222;}
+    header{background:linear-gradient(90deg,var(--green),#3fa044); color:#fff; padding:20px 18px; text-align:center; font-size:20px; font-weight:700;}
+    main{max-width:980px; margin:28px auto; padding:0 18px; }
+
+    /* form area (keeps compact) */
+    .form-block{background:#fff; padding:20px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.06); }
+    h1{margin:0 0 8px; font-size:22px; color:var(--green);}
+    p.lead{margin:0 0 16px; color:var(--muted);}
+
+    label{display:block; margin-top:12px; font-weight:600; color:#333;}
+    input[type="text"], input[type="number"], select {
+      width:100%; padding:10px 12px; border:1px solid #d6d6d6; border-radius:8px; font-size:14px;
+      box-sizing:border-box;
+    }
+    .row{display:flex; gap:12px;}
+    .col{flex:1;}
+
+    button.primary{
+      width:100%; margin-top:16px; padding:12px 14px; background:var(--accent); color:#fff; border:none; border-radius:8px;
+      font-weight:700; cursor:pointer; font-size:15px;
+    }
+    button.primary:hover{opacity:.95; transform:translateY(-1px);}
+
+    /* result (full-width, plain, no cards) */
+    #result-page{display:none; margin-top:12px; padding-bottom:60px;}
+    .result-title{font-size:22px; color:var(--green); margin-bottom:14px; text-align:left;}
+    .section-sep{height:1px; background:linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0)); margin:18px 0;}
+
+    /* crop block (plain layout: heading, why, how, steps, tips) */
+    .crop-name{font-size:20px; color:#0b5a2b; margin:18px 0 8px;}
+    .why{color:#333; margin-bottom:10px;}
+    .how{font-weight:600; margin-bottom:8px; color:var(--muted);}
+    ol.steps{padding-left:20px; margin:8px 0 14px; color:#222;}
+    ol.steps li{margin:8px 0; line-height:1.45;}
+    ul.tips{padding-left:20px; margin:8px 0 6px;}
+    ul.tips li{margin:6px 0; color:#222;}
+
+    .small-note{font-size:13px; color:var(--muted); margin-top:12px;}
+
+    /* minimal back link */
+    .back-link{display:inline-block; margin-top:20px; color:var(--accent); text-decoration:none; font-weight:600;}
+    .back-link:hover{text-decoration:underline;}
+    @media (max-width:600px){
+      .row{flex-direction:column;}
+    }
+  </style>
+</head>
+<body>
+  <header>🌱 Smart Crop Recommendation — Clean Output</header>
+
+  <main>
+    <!-- FORM -->
+    <div id="form-page" class="form-block">
+      <h1>Smart Crop Selection</h1>
+      <p class="lead">Fill the form and get step-by-step cultivation guidance (output will show recommended crops with detailed steps + tips).</p>
+
+      <label for="location">Location (optional)</label>
+      <input id="location" type="text" placeholder="e.g., Maharashtra (will not be shown in output)">
+
+      <div class="row">
+        <div class="col">
+          <label for="soil">Soil Type</label>
+          <select id="soil">
+            <option value="Alluvial">Alluvial</option>
+            <option value="Black">Black</option>
+            <option value="Red">Red</option>
+            <option value="Laterite">Laterite</option>
+            <option value="Desert">Desert</option>
+            <option value="Mountain">Mountain/Forest</option>
+            <option value="Sandy">Sandy</option>
+            <option value="Loamy">Loamy</option>
+            <option value="Clay">Clay</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="size">Farm Size (acres)</label>
+          <input id="size" type="number" min="0" placeholder="e.g., 5">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="climate">Climate Zone</label>
+          <select id="climate">
+            <option value="Tropical">Tropical</option>
+            <option value="Subtropical">Subtropical</option>
+            <option value="Arid">Arid</option>
+            <option value="Temperate">Temperate</option>
+            <option value="Cold">Cold/Mountain</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="previous">Previous Crop Grown</label>
+          <input id="previous" type="text" placeholder="e.g., Rice or Wheat">
+        </div>
+      </div>
+
+      <button class="primary" onclick="showResults()">Get Recommendations</button>
+    </div>
+
+    <!-- RESULT (plain no-cards, no container) -->
+    <div id="result-page">
+      <div class="result-title">Recommended crops & step-by-step cultivation guide</div>
+      <div id="resultsArea">
+        <!-- JS will inject crop sections here; no boxed containers -->
+      </div>
+
+      <div class="section-sep"></div>
+      <a href="#" class="back-link" id="backLink" onclick="restart();return false;">← Start over</a>
+      <p class="small-note">Notes: This is general agronomic guidance — adapt to local varieties, soil test results and extension advice for exact fertilizer rates and pest control products.</p>
+    </div>
+  </main>
+
+<script>
+/* Core logic: compute recommended crops, then render an unobtrusive, full-width output.
+   Output intentionally does NOT repeat the input fields. It lists each recommended crop with:
+     - why it's suitable
+     - a "how to start" short sentence
+     - an expanded step-by-step procedure (ordered list)
+     - extra practical tips (bullets)
+*/
+
+/* Minimal crop database with extended steps & tips */
+const cropGuide = {
+  "Rice": {
+    reason: "Favours alluvial / clay soils and warm, wet climates. Performs well where water can be managed.",
+    how: "Raise good nursery or use direct seeding based on local practice; ensure field leveling and water management.",
+    steps: [
+      "Do a soil test and plough field; puddle if transplanting (for lowland rice).",
+      "Select high-yielding, disease-resistant variety suited to your zone.",
+      "Treat seed with recommended seed treatment fungicide/bio-agent.",
+      "Raise nursery (20–30 days) or prepare for direct seeding.",
+      "Transplant seedlings at recommended spacing or broadcast for direct seeding.",
+      "Maintain standing water (2–5 cm) during early vegetative stage; drain per local practice before harvest.",
+      "Apply basal fertilizers and top-dress nitrogen in splits at tillering and panicle initiation.",
+      "Monitor for stem borers, leaf blast and sheath blight; use IPM (biocontrol + targeted chemical control).",
+      "Harvest at proper grain moisture, thresh carefully and sun-dry to safe storage moisture."
+    ],
+    tips: [
+      "Level fields well — increases water-use efficiency and uniform crop growth.",
+      "Use age-appropriate seedlings (20–30 days) for transplanting or precision direct seeding to save labor.",
+      "Practice SRI (System of Rice Intensification) where applicable for higher yield with less water.",
+      "Use balanced NPK and incorporate zinc if deficiency symptoms occur.",
+      "Rotate with legumes where possible to improve soil health."
+    ]
+  },
+
+  "Wheat": {
+    reason: "Performs well on loamy / black soils in subtropical/temperate zones with cool growing season.",
+    how: "Sow certified seed at the recommended sowing window; follow split nitrogen application and timely irrigation.",
+    steps: [
+      "Get a soil test; plough and prepare a fine seedbed.",
+      "Choose locally adapted high-yielding and disease-resistant seed.",
+      "Treat seed (fungicide/insecticide) where recommended.",
+      "Sow at recommended seed rate and row spacing (timely sowing is critical).",
+      "Apply basal fertilizer and split N at tillering and stem elongation.",
+      "Irrigate at crown root initiation, tillering, jointing and grain filling stages as needed.",
+      "Control weeds early (mechanical or herbicide) to reduce competition.",
+      "Monitor for rusts and aphids; use resistant varieties and IPM.",
+      "Harvest when grains are hard and at suitable moisture; thresh and dry."
+    ],
+    tips: [
+      "Timely sowing helps avoid terminal heat stress — this gives major yield advantage.",
+      "Use balanced nutrition; avoid excessive late N which delays maturity.",
+      "Adopt zero-tillage or reduced tillage where feasible to conserve soil moisture."
+    ]
+  },
+
+  "Maize": {
+    reason: "Thrives on fertile loamy soils with warm days; responsive to fertilizers and irrigation.",
+    how: "Prepare a well-drained seedbed, plant good-quality treated seed in rows with correct spacing.",
+    steps: [
+      "Perform soil test; incorporate well-rotted manure or compost before planting.",
+      "Select improved hybrid/variety suited to your maturity requirement.",
+      "Treat seed to protect against early pests and fungal diseases.",
+      "Sow in rows at recommended spacing and depth to ensure uniform emergence.",
+      "Apply basal P and K; apply N in split doses (at planting and top-dress later).",
+      "Weed early and maintain weed-free strips until canopy closure.",
+      "Irrigate especially during tasseling and grain filling if rainfall is insufficient.",
+      "Monitor for fall armyworm, stem borers and apply IPM (biocontrol + selective insecticide).",
+      "Harvest when cobs are mature; dry and store properly to avoid aflatoxin."
+    ],
+    tips: [
+      "Maintain plant population — correct spacing strongly affects yield.",
+      "Timely top-dress of nitrogen increases kernel number and weight.",
+      "Rotate with legumes (soybean, pigeon pea) to break pest/disease cycles and improve soil N."
+    ]
+  },
+
+  "Sugarcane": {
+    reason: "Best on deep alluvial/loamy soils with abundant water and long growing season.",
+    how: "Plant disease-free setts in well-prepared furrows; provide nutrition and water through the season.",
+    steps: [
+      "Select disease-free stalk cuttings (setts); treat with fungicide where recommended.",
+      "Deeply plough and level the field; make furrows/planting trenches.",
+      "Place setts in furrows at recommended spacing and cover; ensure correct bud orientation.",
+      "Apply basal fertiliser and organic manure; follow recommended NPK schedule across stages.",
+      "Irrigate regularly — maintain soil moisture especially during germination and tillering.",
+      "Perform earthing-up and weed control during early growth.",
+      "Monitor for stem borers, ratoon stunting disease and white grub; use IPM.",
+      "Harvest at appropriate age (10–16 months depending on variety) and process quickly to preserve sucrose."
+    ],
+    tips: [
+      "Use high-brix, high-yielding varieties and healthy setts for good germination.",
+      "Adopt ratooning carefully: manage stubble and provide timely fertilizers for ratoon crops.",
+      "Soil testing helps optimize fertilizer doses for cost-effective production."
+    ]
+  },
+
+  "Pulses": {
+    reason: "Pulses fix nitrogen, improve soil health and grow on a range of soils. Good for rotations.",
+    how: "Use rhizobium-inoculated seed; ensure timely sowing and limited but adequate moisture.",
+    steps: [
+      "Choose appropriate pulse species for season (e.g., chickpea, pigeon pea, mung).",
+      "Perform light tillage and create a fine seedbed.",
+      "Treat seeds with appropriate rhizobium inoculant for nitrogen fixation.",
+      "Sow at recommended depth and spacing.",
+      "Apply small starter phosphorus if soil is low in P; avoid excessive nitrogen.",
+      "Control weeds early (hand weeding or herbicides), as pulses are weak competitors when young.",
+      "Monitor for pod borer and foliar diseases; use pheromone traps and IPM.",
+      "Harvest once pods mature and moisture is right; thresh carefully to prevent seed damage."
+    ],
+    tips: [
+      "Inoculation with rhizobia can significantly reduce the need for N fertiliser.",
+      "Pulses are a good follow-up crop after cereals to improve soil N for the next crop.",
+      "Use seed cleaning and storage practices to maintain seed quality for next season."
+    ]
+  },
+
+  "Cotton": {
+    reason: "Well suited to black and red soils in warm regions; responds to careful nutrient and pest management.",
+    how: "Use certified, Bt or resistant varieties (if appropriate), plant in rows and manage pests proactively.",
+    steps: [
+      "Plough deeply and prepare a fine tilth for uniform emergence.",
+      "Choose certified seed and treat seed for seed-borne diseases.",
+      "Sow at recommended spacing; keep rows for inter-cultural operations.",
+      "Apply basal fertilizers; split N applications across growth stages.",
+      "Implement regular monitoring for bollworms and sucking pests; use biocontrols and targeted sprays.",
+      "Irrigate based on soil moisture and crop stage — conserve water in rainfed systems.",
+      "Stop irrigation before maturity to encourage boll opening; pick bolls promptly.",
+      "Use proper ginning and storage to keep fibre quality high."
+    ],
+    tips: [
+      "Adopt integrated pest management (pheromone traps, Bt varieties where legal, biocontrols).",
+      "Avoid excessive nitrogen late in season — increases pests and delays maturity.",
+      "Keep records of pest incidence and spray only when threshold levels are exceeded."
+    ]
+  },
+
+  "Soybean": {
+    reason: "Good on loamy soils in warm seasons; a valuable oilseed legume that fixes nitrogen.",
+    how: "Inoculate seed with rhizobium; sow at optimal time and manage fertility with P and K.",
+    steps: [
+      "Ensure a well-prepared seedbed; test soil and apply P if low.",
+      "Use improved varieties and inoculate seed before sowing.",
+      "Sow at correct depth and spacing for the variety.",
+      "Apply phosphorus and potash as recommended; nitrogen unnecessary if inoculated well.",
+      "Weed control early; consider pre-emergence herbicide where recommended.",
+      "Monitor for pod borer and defoliators and use IPM.",
+      "Harvest at physiological maturity and dry seeds thoroughly.",
+    ],
+    tips: [
+      "Good inoculation is essential — it reduces fertilizer cost and improves yields.",
+      "Rotate soybean with cereals to enhance soil fertility and control pests."
+    ]
+  },
+
+  "Sunflower": {
+    reason: "Tolerates light soils, produces high-value oilseed with short to medium season.",
+    how: "Sow on well-drained fertile soils; ensure good plant population and early weed control.",
+    steps: [
+      "Prepare a well-drained seedbed; incorporate compost or balanced fertilizer.",
+      "Use hybrid seeds for oil yield; sow at correct spacing and depth.",
+      "Ensure uniform plant population — replant if patchy emergence occurs.",
+      "Apply N and K appropriately; monitor nutrient needs.",
+      "Control weeds early; sunflowers are poor competitors at early stage.",
+      "Protect from birds as heads develop; manage pests like helioleum and diseases.",
+      "Harvest when back of head turns yellow-brown and moisture is appropriate."
+    ],
+    tips: [
+      "Sunflower tolerates moderate drought — keep soil moisture during flowering.",
+      "Avoid waterlogging and continuous sunflower in same field to prevent disease build-up."
+    ]
+  },
+
+  "Bajra": {
+    reason: "Very drought-tolerant millet ideal for sandy and arid soils.",
+    how: "Sow soon after rains; minimal fertiliser required; good for low-input systems.",
+    steps: [
+      "Prepare loose seedbed; sow shallow after onset of rains.",
+      "Use local hardy varieties suited to your area.",
+      "Keep moderate spacing to conserve moisture.",
+      "Apply light doses of fertiliser; heavy N not needed.",
+      "Weed early and protect from birds.",
+      "Harvest when panicles dry and grains harden."
+    ],
+    tips: [
+      "Good crop for marginal lands — useful in crop rotations and intercropping.",
+      "Seed priming can improve germination in dry conditions."
+    ]
+  },
+
+  "Groundnut": {
+    reason: "Prefers sandy-loam soils; oilseed that benefits from good drainage and warm growing season.",
+    how: "Use fresh, disease-free seed; sow in ridges or beds and maintain moisture for pegging.",
+    steps: [
+      "Prepare ridges or raised beds to ensure drainage.",
+      "Use certified seed and treat for pathogens.",
+      "Sow at recommended spacing; ensure loose soil for pegging.",
+      "Apply balanced fertliser with calcium and gypsum if needed for pod development.",
+      "Irrigate regularly especially during flowering and pegging.",
+      "Manage foliar diseases and aflatoxin risk by timely harvest and drying.",
+      "Dry pods post-harvest and store in cool, dry place."
+    ],
+    tips: [
+      "Avoid late harvesting which increases aflatoxin risk.",
+      "Rotate with cereals to reduce disease and pest pressure."
+    ]
+  },
+
+  "Barley": {
+    reason: "Grows well in cool, temperate zones; used for feed and malting where suitable varieties are used.",
+    how: "Sow in well-drained loamy soils during recommended sowing window and manage nitrogen carefully.",
+    steps: [
+      "Prepare fine seedbed and sow certified seeds at correct depth.",
+      "Apply basal P and K; split nitrogen applications.",
+      "Control weeds early and monitor for diseases like powdery mildew.",
+      "Irrigate in dry spells; avoid waterlogging.",
+      "Harvest when grains are mature and dry."
+    ],
+    tips: [
+      "For malting barley use recommended varieties and manage nitrogen to achieve grain protein targets.",
+      "Crop can be short-duration and fits well in rotation."
+    ]
+  },
+
+  "Sesame": {
+    reason: "Drought-tolerant oilseed for light, well-drained soils.",
+    how: "Use properly prepared seedbed, avoid waterlogging, and sow at recommended spacing.",
+    steps: [
+      "Prepare a firm seedbed; sow during warm season.",
+      "Use quality seed; shallow sowing ensures emergence.",
+      "Apply light fertiliser; avoid excessive nitrogen.",
+      "Control weeds early and protect from heavy rain during maturation.",
+      "Harvest when capsules yellow and dry (combine where available)."
+    ],
+    tips: [
+      "Sesame is sensitive to waterlogging; ensure good drainage.",
+      "Stagger planting dates in larger areas to manage harvest workload."
+    ]
+  },
+
+  "Guar": {
+    reason: "Drought hardy legume suitable for arid and semi-arid soils, good for gum and fodder.",
+    how: "Sow after rains; minimal fertiliser, inoculate seed if possible.",
+    steps: [
+      "Choose good cultivar; prepare seedbed after rain.",
+      "Sow at recommended spacing and depth.",
+      "Manage weeds and provide moisture during flowering for pod set.",
+      "Harvest pods when dry; thresh carefully."
+    ],
+    tips: [
+      "Guar fixes nitrogen — use in rotation to improve soil fertility.",
+      "Avoid over-irrigation; grown primarily in low-rainfall zones."
+    ]
+  },
+
+  "Vegetables": {
+    reason: "Vegetable choices vary widely; fertile, well-drained soils with irrigation support high-value crops.",
+    how: "Decide crop (tomato, brinjal, okra, leafy veg), raise nursery, transplant and manage fertigation.",
+    steps: [
+      "Select marketable varieties and establish a nursery for transplanting.",
+      "Prepare beds/ridges and apply well-rotted manure.",
+      "Transplant seedlings at recommended spacing.",
+      "Use drip irrigation and fertigation for steady nutrient supply.",
+      "Mulch to conserve moisture and control weeds.",
+      "Monitor pests and diseases; use IPM and timely sprays.",
+      "Harvest staggeredly as per crop to extend market window."
+    ],
+    tips: [
+      "Vegetables are labour- and input-intensive but give higher returns per acre.",
+      "Use protected cultivation (shade net/greenhouse) to improve yields and extend seasons."
+    ]
+  },
+
+  "Tomato": {
+    reason: "High-value vegetable that does well on well-drained loamy soils with regular irrigation.",
+    how: "Raise strong nursery, transplant carefully, provide staking and fertigation.",
+    steps: [
+      "Raise nursery with healthy seedlings (30–45 days).",
+      "Prepare fertile beds with organic matter.",
+      "Transplant uniform seedlings and provide support (stakes/cages).",
+      "Apply adequate calcium and balanced NPK; use drip irrigation for stable moisture.",
+      "Prune and remove suckers for indeterminate varieties.",
+      "Watch for blight, wilt and pests; apply IPM measures promptly.",
+      "Harvest green or ripe fruits depending on market and maturity."
+    ],
+    tips: [
+      "Use grafted seedlings to manage soil-borne diseases where available.",
+      "Maintain calcium levels to reduce blossom end rot."
+    ]
+  },
+
+  "Watermelon": {
+    reason: "Suitables for sandy to loamy soils, warm season crop with high market value.",
+    how: "Use raised beds, plastic mulch and regular but moderate irrigation for sweetest fruit.",
+    steps: [
+      "Prepare raised beds; incorporate compost.",
+      "Sow or transplant seedlings with spacing for vine spread.",
+      "Use plastic mulch and drip irrigation to conserve moisture and reduce weeds.",
+      "Fertilize in splits; ensure adequate potassium for fruit quality.",
+      "Hand pollinate or maintain pollinators; thin fruits to improve size.",
+      "Harvest when ground spot turns creamy and sugar content is high."
+    ],
+    tips: [
+      "Mulch improves fruit quality and keeps melons clean.",
+      "Test for sugars (Brix) before harvest for premium pricing."
+    ]
+  },
+
+  "Sunflower-Generic": {
+    reason: "Short-duration oilseed suited to medium-fertility soils; tolerant of moderate drought.",
+    how: "Plant hybrids at correct population and protect the crop at flowering from bird damage.",
+    steps: [
+      "Prepare seedbed and sow hybrids at correct spacing.",
+      "Fertilize with phosphorus and potassium; nitrogen modestly.",
+      "Protect from birds and late-season lodging.",
+      "Harvest when back of heads turn brown and seeds are firm."
+    ],
+    tips: [
+      "Sunflower is responsive to timely fertilization and weed control in early stages.",
+      "Rotate crops to avoid disease build-up."
+    ]
+  }
+};
+
+/* mapping of soil->crops and climate compatibility (same logic as before) */
+const soilCrops = {
+  "Alluvial": ["Rice", "Wheat", "Sugarcane", "Maize", "Pulses"],
+  "Black": ["Cotton", "Soybean", "Sunflower", "Wheat"],
+  "Red": ["Millets", "Pulses", "Groundnut", "Cotton"],
+  "Laterite": ["Tea", "Coffee", "Cashew", "Coconut"],
+  "Desert": ["Bajra", "Barley", "Sesame", "Guar"],
+  "Mountain": ["Tea", "Coffee", "Spices", "Apple"],
+  "Sandy": ["Groundnut", "Watermelon", "Cashew"],
+  "Loamy": ["Wheat", "Rice", "Sugarcane", "Fruits", "Vegetables"],
+  "Clay": ["Rice", "Wheat", "Soybean", "Tomato"]
+};
+
+const climateCrops = {
+  "Tropical": ["Rice", "Sugarcane", "Banana", "Coconut", "Groundnut", "Tomato"],
+  "Subtropical": ["Wheat", "Maize", "Cotton", "Soybean", "Sunflower"],
+  "Arid": ["Millets", "Barley", "Guar", "Sesame", "Bajra"],
+  "Temperate": ["Apple", "Barley", "Potato", "Oats"],
+  "Cold": ["Apple", "Barley", "Tea", "Spices"]
+};
+
+/* utility: produce final crop list */
+function pickCrops(soil, climate, previous){
+  const available = soilCrops[soil] ? soilCrops[soil].slice() : [];
+  const filtered = available.filter(c => c.toLowerCase() !== (previous||"").trim().toLowerCase());
+  const climMatch = filtered.filter(c => climateCrops[climate] && climateCrops[climate].includes(c));
+  return climMatch.length ? climMatch : filtered;
+}
+
+/* render results: no boxed containers, plain headings and lists */
+function showResults(){
+  const soil = document.getElementById('soil').value;
+  const climate = document.getElementById('climate').value;
+  const previous = document.getElementById('previous').value;
+
+  const finalCrops = pickCrops(soil, climate, previous);
+  const resultsArea = document.getElementById('resultsArea');
+  resultsArea.innerHTML = ''; // clear
+
+  if(!finalCrops || finalCrops.length === 0){
+    resultsArea.innerHTML = '<p>No suitable crop found for selected soil/climate. Try different selections.</p>';
+    document.getElementById('result-page').style.display = 'block';
+    document.getElementById('form-page').style.display = 'none';
+    return;
+  }
+
+  // For each recommended crop, build a plain section (heading, why, how, steps, tips)
+  finalCrops.forEach(crop => {
+    // prefer exact key; fallback to generic variants (e.g., "Sunflower-Generic" for sunflower)
+    const key = crop in cropGuide ? crop : (crop === 'Sunflower' ? 'Sunflower-Generic' : crop);
+    const guide = cropGuide[key] || null;
+
+    // heading
+    const h = document.createElement('h3');
+    h.className = 'crop-name';
+    h.textContent = crop;
+    resultsArea.appendChild(h);
+
+    // reason (why)
+    const why = document.createElement('p');
+    why.className = 'why';
+    why.innerHTML = `<strong>Why this is suitable:</strong> ${guide ? guide.reason : 'This crop matches your soil and climate conditions.'}`;
+    resultsArea.appendChild(why);
+
+    // how short
+    const how = document.createElement('p');
+    how.className = 'how';
+    how.innerHTML = `<strong>How to start:</strong> ${guide ? guide.how : 'Follow general land preparation and seed selection practices.'}`;
+    resultsArea.appendChild(how);
+
+    // steps (detailed)
+    const stepsTitle = document.createElement('div');
+    stepsTitle.style.fontWeight = '700';
+    stepsTitle.style.marginTop = '8px';
+    stepsTitle.textContent = 'Step-by-step process:';
+    resultsArea.appendChild(stepsTitle);
+
+    const ol = document.createElement('ol');
+    ol.className = 'steps';
+    if(guide && Array.isArray(guide.steps)){
+      guide.steps.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        ol.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = 'Prepare the land, choose quality seed, sow as recommended, manage nutrients and water, protect from pests, harvest on maturity.';
+      ol.appendChild(li);
+    }
+    resultsArea.appendChild(ol);
+
+    // tips
+    const tipsTitle = document.createElement('div');
+    tipsTitle.style.fontWeight = '700';
+    tipsTitle.style.marginTop = '6px';
+    tipsTitle.textContent = 'Practical tips for higher yield:';
+    resultsArea.appendChild(tipsTitle);
+
+    const ul = document.createElement('ul');
+    ul.className = 'tips';
+    if(guide && Array.isArray(guide.tips)){
+      guide.tips.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        ul.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = 'Follow local recommendations for varieties and fertilizer rates; use IPM to manage pests.';
+      ul.appendChild(li);
+    }
+    resultsArea.appendChild(ul);
+
+    // separator line between crops
+    const sep = document.createElement('div');
+    sep.className = 'section-sep';
+    resultsArea.appendChild(sep);
+  });
+
+  // show results and hide form (results intentionally do NOT show input fields)
+  document.getElementById('form-page').style.display = 'none';
+  document.getElementById('result-page').style.display = 'block';
+}
+
+/* restart (simple page reload) */
+function restart(){
+  // show form, hide result
+  document.getElementById('form-page').style.display = 'block';
+  document.getElementById('result-page').style.display = 'none';
+  // clear previous results
+  document.getElementById('resultsArea').innerHTML = '';
+  // optional: clear inputs
+  // document.getElementById('location').value = '';
+  // document.getElementById('size').value = '';
+  // document.getElementById('previous').value = '';
+}
+</script>
+</body>
+</html>

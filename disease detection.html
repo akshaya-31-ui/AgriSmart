@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌱 Plant Disease Detector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    h2 {
+      text-align: center;
+      color: #2d6a4f;
+    }
+    input[type="file"] {
+      display: block;
+      margin: 15px auto;
+    }
+    .preview {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .preview img {
+      max-width: 350px;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      padding: 5px;
+    }
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      border-left: 6px solid #2d6a4f;
+    }
+    .section-title {
+      font-weight: bold;
+      margin-top: 15px;
+      color: #1b4332;
+    }
+    .tag {
+      background: #d8f3dc;
+      color: #1b4332;
+      padding: 5px 10px;
+      margin: 5px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>🌱 Plant Disease Detector</h2>
+  
+  <input type="file" accept="image/*" id="upload" onchange="handleUpload(event)" />
+  <div class="preview" id="preview"></div>
+
+  <div class="result" id="result" style="display:none;">
+    <p><strong>Disease Detected:</strong> <span id="diseaseName"></span></p>
+    <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
+
+    <p class="section-title">🧬 Why it Happens:</p>
+    <p id="cause"></p>
+
+    <p class="section-title">🧾 Symptoms:</p>
+    <div id="symptoms"></div>
+
+    <p class="section-title">🛠️ Treatment Recommendations:</p>
+    <ul id="treatment"></ul>
+
+    <p class="section-title">🛡️ Prevention Tips:</p>
+    <ul id="prevention"></ul>
+
+    <p class="section-title">📋 Precautions:</p>
+    <p id="precautions"></p>
+  </div>
+</div>
+
+<script>
+  const diseaseData = {
+    "d1.jpeg": {
+      disease: "Leaf Gall",
+      confidence: 88,
+      cause: "Caused by mites or bacteria that stimulate abnormal growth on the leaf.",
+      symptoms: ["Swollen bumps on leaves", "Deformation of leaf edges", "Reduced photosynthesis"],
+      treatment: ["Remove infected leaves", "Apply miticide or bactericide"],
+      prevention: ["Avoid overhead watering", "Prune infected branches", "Sanitize tools"],
+      precautions: "Regularly monitor plants and maintain good hygiene."
+    },
+    "d2.jpeg": {
+      disease: "Powdery Mildew",
+      confidence: 90,
+      cause: "Fungal spores spread in warm, dry conditions with poor air circulation.",
+      symptoms: ["White powdery coating on leaves", "Leaf curling", "Reduced growth"],
+      treatment: ["Apply sulfur-based or neem oil fungicides"],
+      prevention: ["Ensure proper spacing and airflow", "Avoid excessive nitrogen fertilizer"],
+      precautions: "Keep humidity low and water plants at the base."
+    },
+    "d3.jpeg": {
+      disease: "Black Spot Disease",
+      confidence: 82,
+      cause: "Fungus thrives in wet, humid conditions.",
+      symptoms: ["Circular black spots on leaves", "Yellowing around spots", "Premature leaf drop"],
+      treatment: ["Remove affected leaves", "Apply fungicide regularly"],
+      prevention: ["Water at the base", "Improve air circulation"],
+      precautions: "Avoid water splashing on leaves."
+    },
+    "d4.jpeg": {
+      disease: "Banana Leaf Spot (Sigatoka)",
+      confidence: 86,
+      cause: "Fungal infection due to humid, rainy environments.",
+      symptoms: ["Dark streaks on banana leaves", "Yellowing patches", "Weak fruit growth"],
+      treatment: ["Remove infected leaves", "Apply fungicide"],
+      prevention: ["Use resistant varieties", "Improve drainage"],
+      precautions: "Do not overcrowd banana plants."
+    },
+    "d5.jpeg": {
+      disease: "Cercospora Leaf Spot",
+      confidence: 84,
+      cause: "Fungus spreads through splashing water and wet leaves.",
+      symptoms: ["Grayish leaf spots", "Necrotic patches", "Leaf drop"],
+      treatment: ["Use fungicides", "Avoid wetting leaves when watering"],
+      prevention: ["Use drip irrigation", "Practice crop rotation"],
+      precautions: "Maintain proper sanitation in the field."
+    },
+    "d6.jpeg": {
+      disease: "Powdery Mildew (Severe)",
+      confidence: 93,
+      cause: "Fungal disease spreading in warm, dry climates.",
+      symptoms: ["Thick white patches on leaves", "Brittle leaf texture", "Stunted growth"],
+      treatment: ["Apply systemic fungicide", "Remove infected parts"],
+      prevention: ["Provide good airflow", "Avoid high humidity"],
+      precautions: "Rotate fungicides to prevent resistance."
+    },
+    "d7.jpeg": {
+      disease: "Scale Insects",
+      confidence: 87,
+      cause: "Insects suck plant sap and weaken growth.",
+      symptoms: ["Sticky residue on leaves", "Yellowing leaves", "Clusters of small scales"],
+      treatment: ["Use horticultural oil", "Apply insecticidal soap"],
+      prevention: ["Inspect plants regularly", "Encourage beneficial insects"],
+      precautions: "Isolate infested plants immediately."
+    },
+    "d8.jpeg": {
+      disease: "Aphid Infestation",
+      confidence: 89,
+      cause: "Aphids feed on sap, transmitting viruses.",
+      symptoms: ["Clusters of tiny green/black insects", "Curled leaves", "Honeydew residue"],
+      treatment: ["Spray with neem oil", "Introduce ladybugs"],
+      prevention: ["Monitor plants often", "Remove weeds nearby"],
+      precautions: "Use reflective mulches to deter aphids."
+    },
+    "d9.jpeg": {
+      disease: "Leaf Tip Burn",
+      confidence: 80,
+      cause: "Caused by salt buildup, over-fertilization, or drought stress.",
+      symptoms: ["Brown tips on leaves", "Crispy edges", "Slow growth"],
+      treatment: ["Flush soil with clean water", "Reduce fertilizer"],
+      prevention: ["Maintain balanced watering", "Avoid overfeeding"],
+      precautions: "Test soil regularly for salt levels."
+    }
+  };
+
+  function handleUpload(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById("preview");
+    const resultBox = document.getElementById("result");
+
+    if (file) {
+      // Preview image
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      preview.innerHTML = '';
+      preview.appendChild(img);
+
+      // Simulated detection using file name
+      const fileName = file.name.toLowerCase();
+      const data = diseaseData[fileName];
+
+      resultBox.style.display = "block";
+      if (data) {
+        document.getElementById("diseaseName").innerText = data.disease;
+        document.getElementById("confidence").innerText = data.confidence;
+        document.getElementById("cause").innerText = data.cause;
+
+        // Symptoms
+        let symptomsDiv = document.getElementById("symptoms");
+        symptomsDiv.innerHTML = "";
+        data.symptoms.forEach(sym => {
+          let tag = document.createElement("span");
+          tag.className = "tag";
+          tag.innerText = sym;
+          symptomsDiv.appendChild(tag);
+        });
+
+        // Treatment
+        let treatmentList = document.getElementById("treatment");
+        treatmentList.innerHTML = "";
+        data.treatment.forEach(t => {
+          let li = document.createElement("li");
+          li.innerText = t;
+          treatmentList.appendChild(li);
+        });
+
+        // Prevention
+        let preventionList = document.getElementById("prevention");
+        preventionList.innerHTML = "";
+        data.prevention.forEach(p => {
+          let li = document.createElement("li");
+          li.innerText = p;
+          preventionList.appendChild(li);
+        });
+
+        document.getElementById("precautions").innerText = data.precautions;
+      } else {
+        document.getElementById("diseaseName").innerText = "Unknown Disease";
+        document.getElementById("confidence").innerText = "N/A";
+        document.getElementById("cause").innerText = "This disease is not in our database.";
+        document.getElementById("symptoms").innerHTML = "<span class='tag'>Not available</span>";
+        document.getElementById("treatment").innerHTML = "<li>Consult a plant pathologist</li>";
+        document.getElementById("prevention").innerHTML = "<li>Ensure proper watering, airflow, and sanitation</li>";
+        document.getElementById("precautions").innerText = "Follow general plant care practices.";
+      }
+    }
+  }
+</script>
+</body>
+</html>
